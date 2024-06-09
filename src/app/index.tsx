@@ -1,34 +1,28 @@
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View, FlatList, SafeAreaView } from "react-native";
-import { supabase } from "./src/lib/supabase";
+// import { StatusBar } from "expo-status-bar";
+import { StyleSheet, Text, View, FlatList, SafeAreaView, Platform, StatusBar } from "react-native";
+import { supabase } from "../lib/supabase";
 import { useEffect, useState } from "react";
 
 // internal import
-import MovieItem from "./src/components/MovieItem";
+import MovieItem from "../components/MovieItem";
 
 export default function App() {
   const [movies, setMovies] = useState([]);
 
   useEffect(() => {
     const fetchMovies = async () => {
-      let { data: movies, error } = await supabase
+      const { data: movies } = await supabase
         .from("movies")
         .select("*")
         .range(0, 24);
-
-      // console.log(error)
-      // console.log(JSON.stringify(movies, null, 2))
-
-      if (movies) {
-        setMovies(movies);
-      }
+      setMovies(movies);
     };
     fetchMovies();
   }, []);
 
   return (
     <View style={styles.container}>
-      <SafeAreaView>
+      <SafeAreaView style={styles.AndroidSafeArea}>
         <FlatList data={movies} renderItem={MovieItem} />
       </SafeAreaView>
       <StatusBar style="auto" />
@@ -40,6 +34,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#181413",
-    paddingTop: 50,
   },
+  AndroidSafeArea: {
+    flex: 1,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0
+  }
 });
