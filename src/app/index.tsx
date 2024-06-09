@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { supabase } from "../lib/supabase";
 import { useEffect, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 
 // internal import
 import MovieItem from "../components/MovieItem";
@@ -19,19 +20,34 @@ import MovieItem from "../components/MovieItem";
 export default function App() {
   const [movies, setMovies] = useState([]);
   const [query, setQuery] = useState("");
+  const { id } = useLocalSearchParams();
 
   useEffect(() => {
     const fetchMovies = async () => {
-      const { data: movies } = await supabase
+      let { data: movies, error } = await supabase
         .from("movies")
         .select("*")
-        .range(0, 24);
-      setMovies(movies);
+        .range(0, 50);
+
+      if (movies) {
+        setMovies(movies);
+      }
     };
     fetchMovies();
   }, []);
 
-  const onPress = () => {
+  const onPress = async () => {
+    const {data} = await supabase.functions.invoke("embed", {
+      body: { input: query },
+    });
+    console.log(data.embedding);
+
+    const {data: movies} = await supabase.rpc('match_movies',{
+      query_embedding: data.embedding,
+      match_threshold: 0.78,
+      match_count: 20,
+    });
+    setMovies(movies);
     setQuery("");
   };
 
@@ -50,7 +66,7 @@ export default function App() {
         </View>
         <FlatList data={movies} renderItem={MovieItem} />
       </SafeAreaView>
-      <StatusBar style="auto" />
+      <StatusBar />
     </View>
   );
 }
